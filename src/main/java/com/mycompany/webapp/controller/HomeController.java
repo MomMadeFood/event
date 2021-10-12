@@ -86,16 +86,12 @@ public class HomeController {
 	      Callable<Integer> task = new Callable<Integer>() {
 	         @Override
 	         public Integer call() throws Exception {
-	            // 시간 측정 코드(o)
-	            // Service 객체 호출 코드
-	            logger.info(Thread.currentThread().getName() + ": 이벤트 처리");
 	            logger.info(eventCount++ + "번째 접근");
 	            if (eventCouponIssueCount > 2) {
 	               return 1;
 	            } else {
 	               JsonNode resultNode = couponService.issueEventCoupon(couponNo, memberId);
 	               System.out.println(resultNode.get("data"));
-	               System.out.println(resultNode.get("data").get("result"));
 	               String result = resultNode.get("data").get("result").toString();
 	               if(result.equals("\"success\"")) {
 	                  eventCouponIssueCount++;
@@ -108,7 +104,6 @@ public class HomeController {
 	         }
 	      };
 	      Future<Integer> future = executorService.submit(task);
-	      logger.info(Thread.currentThread().getName() + ": 큐에 작업을 저장");
 
 	      // 이벤트 처리가 완료될 때까지 대기
 	      int result = future.get();

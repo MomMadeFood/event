@@ -21,7 +21,7 @@ public class CouponService {
    
    public JsonNode issueEventCoupon(String couponNo, String memberId) {
       HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build(); // HttpClient 생성
-      HttpPost httpPost = new HttpPost("http://jun1004.iptime.org:57832/issueEventCoupon"); // POST 메소드 URL 새성
+      HttpPost httpPost = new HttpPost("http://192.168.40.71:8080/issueEventCoupon"); // POST 메소드 URL 새성
  
       try {
          httpPost.setHeader("Accept", "application/json");
@@ -39,7 +39,6 @@ public class CouponService {
          if (response.getStatusLine().getStatusCode() == 200) {
             ResponseHandler<String> handler = new BasicResponseHandler();
             String body = handler.handleResponse(response);
-            System.out.println(body);
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode node = objectMapper.readTree(body);
             return node;

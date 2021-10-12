@@ -1,85 +1,57 @@
 package com.mycompany.webapp.service;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.annotation.Resource;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallback;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import com.mycompany.webapp.controller.HomeController;
-import com.mycompany.webapp.dao.CouponDAO;
-import com.mycompany.webapp.dao.CouponDetailDAO;
-import com.mycompany.webapp.dto.CouponDetailDTO;
-import com.mycompany.webapp.exception.CouponException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 @Service
 public class CouponService {
-	
-	@Resource
-	private CouponDetailDAO couponDetailDAO;
-	
-	@Resource
-	private CouponDAO couponDAO;
-	
-	@Resource
-	private TransactionTemplate transactionTemplate;
-	
-	private static final Logger logger = LoggerFactory.getLogger(CouponService.class);
-	
-	public Map<String,String> issueCoupon(String memberId, String couponNo) {
-		
-		logger.info("실행");
-		
-		Map<String,String> resultMap = new HashMap<String, String>();
-		Map<String,String> result = transactionTemplate.execute(new TransactionCallback<Map<String,String> >() {
-			@Override
-			public Map<String,String> doInTransaction(TransactionStatus status) {
-				try {
-					
-					
-					CouponDetailDTO coupon = new CouponDetailDTO();
-					coupon.setCouponNo(couponNo);
-					coupon.setMemberId(memberId);
-					
-					
-					int count = couponDetailDAO.selectCountByCouponDetail(coupon);
-					
-					if(count>=1) {
-						throw new CouponException("이미 발급한 쿠폰입니다.");
-					}
+   
 
-					int updateResult = couponDAO.updateCouponById(couponNo);
-					
-					if(updateResult==0) {
-						throw new CouponException("쿠폰 정보 업데이트 중 오류가 발생했습니다.");
-					}
+   
+   public JsonNode issueEventCoupon(String couponNo, String memberId) {
+      HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build(); // HttpClient 생성
+      HttpPost httpPost = new HttpPost("http://jun1004.iptime.org:57832/issueEventCoupon"); // POST 메소드 URL 새성
+ 
+      try {
+         httpPost.setHeader("Accept", "application/json");
+         httpPost.setHeader("Connection", "keep-alive");
+         httpPost.setHeader("Content-Type", "application/json");
+         //httpPost.setHeader("Access-Control-Allow-Headers","content-type");
 
-					updateResult = couponDetailDAO.insertCouponDetailByCouponDetail(coupon);
-					if(updateResult==0) {
-						throw new CouponException("쿠폰 발급중 오류가 발생했습니다.");
-					}
-					resultMap.put("result","success");
-					
-					return resultMap;
-				}catch (CouponException e) {
-					resultMap.put("result","fail");
-					resultMap.put("message",e.getMessage());
-					return resultMap;
-				}catch(Exception e) {
-					resultMap.put("result","fail");
-					resultMap.put("message","예상치못한 오류 발생");
-					return resultMap;
-				}
-				
-			}
-		});
-		return result;
-	}
-    
+         // json 메시지 입력
+         httpPost.setEntity(new StringEntity("{\"couponNo\":\"" + couponNo + "\",\"memberId\":\"" + memberId + "\"}"));
+
+         HttpResponse response = client.execute(httpPost);
+
+
+         // Response 출력
+         if (response.getStatusLine().getStatusCode() == 200) {
+            ResponseHandler<String> handler = new BasicResponseHandler();
+            String body = handler.handleResponse(response);
+            System.out.println(body);
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode node = objectMapper.readTree(body);
+            return node;
+         } else {
+            System.out.println("response is error : " + response.getStatusLine().getStatusCode());
+         }
+      } catch (Exception e) {
+         e.printStackTrace();
+      }
+
+      return null;
+   }
 }
+
+   
